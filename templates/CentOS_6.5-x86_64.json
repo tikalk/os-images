@@ -1,0 +1,67 @@
+{
+
+    "builders": [
+        {
+            "boot_command": [
+                "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/centos/6.5/ks.cfg<enter><wait>"
+            ],
+            "iso_url": "{{user `mirror`}}/6.5/isos/x86_64/CentOS-6.5-x86_64-bin-DVD1.iso",
+            "output_directory": "packer-centos-6.5-x86_64-virtualbox",
+            "iso_checksum": "32c7695b97f7dcd1f59a77a71f64f2957dddf738",
+            "iso_checksum_type": "sha1",
+            "ssh_username": "vagrant",
+            "ssh_password": "vagrant",
+            "ssh_port": 22,
+            "ssh_wait_timeout": "10000s",
+            "disk_size": 100000,
+            "hard_drive_interface": "sata",
+            "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+            "guest_additions_sha256": "247e15e9a205dcd4761f6cb547ceca2a61e8d6905c1930870939fd323f4cd1ae",
+            "guest_os_type": "RedHat_64",
+            "headless": "false",
+            "http_directory": "http",
+            "shutdown_command": "sudo /sbin/halt -p",
+            "type": "virtualbox-iso",
+            "vboxmanage": [
+                [ "modifyvm", "{{.Name}}", "--memory", "512" ],
+                [ "modifyvm", "{{.Name}}", "--cpus", "1" ]
+            ],
+            "virtualbox_version_file": ".vbox_version"
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "vagrant",
+            "output": "./builds/{{.Provider}}/tikalk_centos-6.5-x86_64_chef-v{{ user `chef_version`}}_puppet-v{{ user `puppet_version`}}-v{{user `tikal_version`}}.box"
+        }
+    ],
+    "provisioners": [
+        {
+            "environment_vars": [
+                "CHEF_VERSION={{user `chef_version`}}",
+                "PUPPET_VERSION={{user `puppet_version`}}"
+            ],
+            "type": "shell",
+            "execute_command": "sudo sh {{.Path}}",
+            "override": {
+                "virtualbox-iso": {
+                    "scripts": [
+                        "scripts/fix-slow-dns.sh",
+                        "scripts/install-chef.sh",
+                        "scripts/install-puppet.sh",
+                        "scripts/vagrant.sh",
+                        "scripts/virtualbox.sh",
+                        "scripts/cleanup.sh",
+                        "scripts/zerodisk.sh"
+                    ]
+                }
+            }
+        }
+    ],
+    "variables": {
+        "tikal_version": "dev",
+        "chef_version": "11.12.2-1",
+        "puppet_version": "3.5.1",
+        "mirror": "http://mirrors.kernel.org/centos"
+    }
+}
